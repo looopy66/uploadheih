@@ -29,7 +29,7 @@
 
 根据您的 Linux 发行版，使用以下命令之一安装 rclone：
 
-发行版 安装命令
+发行版 安装命令   
 Debian / Ubuntu sudo apt update && sudo apt install rclone   
 CentOS / RHEL 7+ sudo yum install epel-release && sudo yum install rclone   
 CentOS / RHEL 8+ sudo dnf install epel-release && sudo dnf install rclone   
@@ -72,13 +72,7 @@ rclone ls atop:your-bucket-name/
 使用 curl
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/looopy66/uploadheih/refs/heads/main/upload.sh | sudo bash
-```
-
-使用 wget
-
-```bash
-wget -qO- https://raw.githubusercontent.com/looopy66/uploadheih/refs/heads/main/upload.sh | sudo bash
+curl -sSL -o /tmp/install.sh https://raw.githubusercontent.com/looopy66/uploadheih/refs/heads/main/upload.sh && chmod +x /tmp/uninstall.sh && sudo /tmp/uninstall.sh
 ```
 
 📍 快速卸载   
@@ -86,14 +80,9 @@ wget -qO- https://raw.githubusercontent.com/looopy66/uploadheih/refs/heads/main/
 使用 curl
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/looopy66/uploadheih/refs/heads/main/uninstall.sh | sudo bash
+curl -sSL -o /tmp/uninstall.sh https://raw.githubusercontent.com/looopy66/uploadheih/refs/heads/main/uninstall.sh && chmod +x /tmp/uninstall.sh && sudo /tmp/uninstall.sh
 ```
 
-使用 wget
-
-```bash
-wget -qO- https://raw.githubusercontent.com/looopy66/uploadheih/refs/heads/main/uninstall.sh | sudo bash
-```
 
 安装脚本会自动：
 
