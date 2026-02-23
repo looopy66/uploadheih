@@ -17,7 +17,7 @@ echo -e "${YELLOW}远程存储桶中的文件不会被删除。${NC}"
 echo ""
 
 read -p "是否继续卸载？(y/N) " -n 1 -r
-echo ""
+echo
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     echo "卸载已取消。"
     exit 0
@@ -52,7 +52,7 @@ echo ""
 echo -e "${YELLOW}准备卸载 rclone 和 vnstat...${NC}"
 echo -e "${RED}注意：如果系统中有其他程序依赖这些包，卸载可能导致它们无法正常工作。${NC}"
 read -p "是否继续卸载 rclone 和 vnstat？(y/N) " -n 1 -r
-echo ""
+echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     # 根据包管理器卸载
     if command -v apt >/dev/null 2>&1; then
