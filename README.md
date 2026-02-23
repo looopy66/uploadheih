@@ -1,16 +1,8 @@
 自用   
 记得修改脚本内下面的内容
 
-```bash
-RCLONE_REMOTE="atop"                         # rclone remote 名称
-# atop 日志相关
-ATOP_LOG_DIR="/var/log/atop"                  # atop 日志本地目录
-ATOP_BUCKET_PATH="atop-bucket-66/atop-logs/hax" # atop 日志上传路径
-# 流量报告相关
-TRAFFIC_REPORT_DIR="/tmp"                      # 报告临时存放目录（可修改）
-TRAFFIC_BUCKET_PATH="atop-bucket-66/traffic-reports" # 流量报告上传路径
-```
 部分s3存储桶需要自己手动创建相关路径   
+
 🌐 日常数据上传脚本 (Daily Upload Script)
 
 一个轻量级 Shell 脚本，自动上传 atop 系统日志 并生成 网络流量报告 到 S3 兼容的对象存储（通过 rclone）。
