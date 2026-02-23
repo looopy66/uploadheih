@@ -1,5 +1,5 @@
 #!/bin/bash
-# 一键卸载脚本：删除定时任务、主脚本，并卸载 rclone 和 vnstat（需确认）
+# 一键卸载脚本：删除定时任务、主脚本，并卸载 rclone 和 vnstat（需明确确认）
 
 set -e
 
@@ -47,38 +47,49 @@ else
     echo -e "${YELLOW}主脚本不存在，跳过${NC}"
 fi
 
-# ---------- 卸载 rclone 和 vnstat ----------
+# ---------- 卸载 rclone 和 vnstat（必须明确确认）----------
 echo ""
 echo -e "${YELLOW}准备卸载 rclone 和 vnstat...${NC}"
 echo -e "${RED}注意：如果系统中有其他程序依赖这些包，卸载可能导致它们无法正常工作。${NC}"
-read -p "是否继续卸载 rclone 和 vnstat？(y/N) " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    # 根据包管理器卸载
-    if command -v apt >/dev/null 2>&1; then
-        apt remove -y rclone vnstat
-        echo -e "${GREEN}✓ 已通过 apt 卸载 rclone 和 vnstat${NC}"
-    elif command -v yum >/dev/null 2>&1; then
-        yum remove -y rclone vnstat
-        echo -e "${GREEN}✓ 已通过 yum 卸载 rclone 和 vnstat${NC}"
-    elif command -v dnf >/dev/null 2>&1; then
-        dnf remove -y rclone vnstat
-        echo -e "${GREEN}✓ 已通过 dnf 卸载 rclone 和 vnstat${NC}"
-    elif command -v pacman >/dev/null 2>&1; then
-        pacman -Rns --noconfirm rclone vnstat
-        echo -e "${GREEN}✓ 已通过 pacman 卸载 rclone 和 vnstat${NC}"
-    elif command -v zypper >/dev/null 2>&1; then
-        zypper remove -y rclone vnstat
-        echo -e "${GREEN}✓ 已通过 zypper 卸载 rclone 和 vnstat${NC}"
-    elif command -v apk >/dev/null 2>&1; then
-        apk del rclone vnstat
-        echo -e "${GREEN}✓ 已通过 apk 卸载 rclone 和 vnstat${NC}"
-    else
-        echo -e "${RED}不支持的包管理器，请手动卸载 rclone 和 vnstat。${NC}"
-    fi
-else
-    echo "跳过卸载 rclone 和 vnstat。"
-fi
+
+while true; do
+    read -p "是否继续卸载 rclone 和 vnstat？(y/n) " -n 1 -r
+    echo
+    case $REPLY in
+        [Yy])
+            # 根据包管理器卸载
+            if command -v apt >/dev/null 2>&1; then
+                apt remove -y rclone vnstat
+                echo -e "${GREEN}✓ 已通过 apt 卸载 rclone 和 vnstat${NC}"
+            elif command -v yum >/dev/null 2>&1; then
+                yum remove -y rclone vnstat
+                echo -e "${GREEN}✓ 已通过 yum 卸载 rclone 和 vnstat${NC}"
+            elif command -v dnf >/dev/null 2>&1; then
+                dnf remove -y rclone vnstat
+                echo -e "${GREEN}✓ 已通过 dnf 卸载 rclone 和 vnstat${NC}"
+            elif command -v pacman >/dev/null 2>&1; then
+                pacman -Rns --noconfirm rclone vnstat
+                echo -e "${GREEN}✓ 已通过 pacman 卸载 rclone 和 vnstat${NC}"
+            elif command -v zypper >/dev/null 2>&1; then
+                zypper remove -y rclone vnstat
+                echo -e "${GREEN}✓ 已通过 zypper 卸载 rclone 和 vnstat${NC}"
+            elif command -v apk >/dev/null 2>&1; then
+                apk del rclone vnstat
+                echo -e "${GREEN}✓ 已通过 apk 卸载 rclone 和 vnstat${NC}"
+            else
+                echo -e "${RED}不支持的包管理器，请手动卸载 rclone 和 vnstat。${NC}"
+            fi
+            break
+            ;;
+        [Nn])
+            echo "跳过卸载 rclone 和 vnstat。"
+            break
+            ;;
+        *)
+            echo "请输入 y 或 n。"
+            ;;
+    esac
+done
 
 echo ""
 echo -e "${GREEN}========================================${NC}"
