@@ -72,7 +72,7 @@ rclone ls atop:your-bucket-name/
 使用 curl
 
 ```bash
-curl -sSL -o /tmp/install.sh https://raw.githubusercontent.com/looopy66/uploadheih/refs/heads/main/upload.sh && chmod +x /tmp/uninstall.sh && sudo /tmp/uninstall.sh
+curl -sSL -o /tmp/install.sh https://raw.githubusercontent.com/looopy66/uploadheih/refs/heads/main/upload.sh && chmod +x /tmp/install.sh && sudo /tmp/install.sh
 ```
 
 📍 快速卸载   
