@@ -1,9 +1,9 @@
 #!/bin/bash
-# 一键安装脚本：自动安装依赖、写入上传脚本、配置定时任务
+# 一键安装脚本：检查 rclone，安装 vnstat，写入上传脚本，配置定时任务
 
 set -e  # 遇到错误立即退出
 
-# 颜色输出（可选）
+# 颜色输出
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -17,42 +17,64 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-# ---------- 检测包管理器并安装软件 ----------
-install_packages() {
-    local packages="$1"
+# ---------- 检查 rclone 是否已安装 ----------
+if ! command -v rclone >/dev/null 2>&1; then
+    echo -e "${RED}错误: rclone 未安装。${NC}"
+    echo -e "请先安装 rclone 并配置 remote，然后再运行此脚本。"
+    echo ""
+    echo "根据您的系统，可以使用以下命令安装 rclone："
+    
+    if command -v apt >/dev/null 2>&1; then
+        echo "  sudo apt update && sudo apt install rclone"
+    elif command -v yum >/dev/null 2>&1; then
+        echo "  sudo yum install epel-release && sudo yum install rclone"
+    elif command -v dnf >/dev/null 2>&1; then
+        echo "  sudo dnf install epel-release && sudo dnf install rclone"
+    elif command -v pacman >/dev/null 2>&1; then
+        echo "  sudo pacman -S rclone"
+    elif command -v zypper >/dev/null 2>&1; then
+        echo "  sudo zypper install rclone"
+    elif command -v apk >/dev/null 2>&1; then
+        echo "  sudo apk add rclone"
+    else
+        echo "  请参考 rclone 官方安装文档: https://rclone.org/install/"
+    fi
+    
+    echo ""
+    echo "安装完成后，请运行 'rclone config' 配置 remote (建议命名为 'atop')。"
+    echo "然后重新运行此安装脚本。"
+    exit 1
+else
+    echo -e "${GREEN}rclone 已安装，继续...${NC}"
+fi
+
+# ---------- 检测包管理器并安装 vnstat ----------
+install_vnstat() {
     if command -v apt >/dev/null 2>&1; then
         apt update
-        apt install -y $packages
+        apt install -y vnstat
     elif command -v yum >/dev/null 2>&1; then
-        yum install -y epel-release  # 为 rclone 启用 EPEL
-        yum install -y $packages
+        yum install -y epel-release
+        yum install -y vnstat
     elif command -v dnf >/dev/null 2>&1; then
         dnf install -y epel-release
-        dnf install -y $packages
+        dnf install -y vnstat
     elif command -v pacman >/dev/null 2>&1; then
-        pacman -Syu --noconfirm $packages
+        pacman -Syu --noconfirm vnstat
     elif command -v zypper >/dev/null 2>&1; then
-        zypper install -y $packages
+        zypper install -y vnstat
     elif command -v apk >/dev/null 2>&1; then
-        apk add $packages
+        apk add vnstat
     else
-        echo -e "${RED}不支持的包管理器，请手动安装 rclone 和 vnstat${NC}"
+        echo -e "${RED}不支持的包管理器，请手动安装 vnstat${NC}"
         exit 1
     fi
 }
 
-# 检查并安装 rclone
-if ! command -v rclone >/dev/null 2>&1; then
-    echo -e "${YELLOW}未找到 rclone，正在安装...${NC}"
-    install_packages "rclone"
-else
-    echo -e "${GREEN}rclone 已安装，跳过${NC}"
-fi
-
 # 检查并安装 vnstat
 if ! command -v vnstat >/dev/null 2>&1; then
     echo -e "${YELLOW}未找到 vnstat，正在安装...${NC}"
-    install_packages "vnstat"
+    install_vnstat
 else
     echo -e "${GREEN}vnstat 已安装，跳过${NC}"
 fi
@@ -181,10 +203,11 @@ else
     echo -e "${GREEN}定时任务已添加：每天 UTC 时间 02:00 执行 $SCRIPT_PATH${NC}"
 fi
 
-# ---------- 提示用户进行 rclone 配置 ----------
+# ---------- 提示用户进行 rclone 配置（如果尚未配置）----------
 echo ""
 echo -e "${GREEN}安装完成！${NC}"
-echo -e "${YELLOW}请执行以下命令配置 rclone 远程存储（remote 名称必须为 'atop' 或修改脚本中的 RCLONE_REMOTE 变量）：${NC}"
+echo -e "${YELLOW}请确保已使用 'rclone config' 配置好 remote（默认名称为 'atop'）。${NC}"
+echo -e "${YELLOW}如果尚未配置，请立即运行：${NC}"
 echo "  rclone config"
 echo ""
 echo -e "${YELLOW}配置完成后，建议手动测试脚本：${NC}"
