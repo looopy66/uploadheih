@@ -69,13 +69,13 @@ rclone ls atop:your-bucket-name/
 使用 curl
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/yourusername/daily-upload-script/main/install.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/looopy66/uploadheih/refs/heads/main/upload.sh | sudo bash
 ```
 
 使用 wget
 
 ```bash
-wget -qO- https://raw.githubusercontent.com/yourusername/daily-upload-script/main/install.sh | sudo bash
+wget -qO- https://raw.githubusercontent.com/looopy66/uploadheih/refs/heads/main/upload.sh | sudo bash
 ```
 
 📍 请将 URL 中的 yourusername/daily-upload-script 替换为实际的仓库地址。
