@@ -17,7 +17,7 @@ echo -e "${YELLOW}远程存储桶中的文件不会被删除。${NC}"
 echo ""
 
 read -p "是否继续卸载？(y/N) " -n 1 -r
-echo
+
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     echo "卸载已取消。"
     exit 0
