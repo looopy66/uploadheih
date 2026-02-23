@@ -44,7 +44,7 @@ read -p "atop 日志本地目录 [${DEFAULT_ATOP_LOG_DIR}]: " ATOP_LOG_DIR
 ATOP_LOG_DIR=${ATOP_LOG_DIR:-$DEFAULT_ATOP_LOG_DIR}
 
 # atop 日志上传路径（默认：atop-bucket-66/atop-logs/hax）
-echo -e "${YELLOW}⚠️  请确保存储桶（bucket）已在对象存储中手动创建，子路径可以自动创建。${NC}"
+echo -e "${YELLOW}⚠️  请确保存储桶（bucket）已在对象存储中手动创建子路径。${NC}"
 DEFAULT_ATOP_BUCKET="atop-bucket-66/atop-logs/hax"
 read -p "atop 日志上传路径（桶名/路径）[${DEFAULT_ATOP_BUCKET}]: " ATOP_BUCKET_PATH
 ATOP_BUCKET_PATH=${ATOP_BUCKET_PATH:-$DEFAULT_ATOP_BUCKET}
@@ -55,7 +55,7 @@ read -p "流量报告临时目录 [${DEFAULT_TRAFFIC_DIR}]: " TRAFFIC_REPORT_DIR
 TRAFFIC_REPORT_DIR=${TRAFFIC_REPORT_DIR:-$DEFAULT_TRAFFIC_DIR}
 
 # 流量报告上传路径（默认：atop-bucket-66/traffic-reports）
-echo -e "${YELLOW}⚠️  请确保存储桶（bucket）已在对象存储中手动创建，子路径可以自动创建。${NC}"
+echo -e "${YELLOW}⚠️  请确保存储桶（bucket）已在对象存储中手动创建子路径。${NC}"
 DEFAULT_TRAFFIC_BUCKET="atop-bucket-66/traffic-reports"
 read -p "流量报告上传路径（桶名/路径）[${DEFAULT_TRAFFIC_BUCKET}]: " TRAFFIC_BUCKET_PATH
 TRAFFIC_BUCKET_PATH=${TRAFFIC_BUCKET_PATH:-$DEFAULT_TRAFFIC_BUCKET}
