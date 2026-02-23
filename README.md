@@ -30,13 +30,13 @@
 根据您的 Linux 发行版，使用以下命令之一安装 rclone：
 
 发行版 安装命令
-Debian / Ubuntu sudo apt update && sudo apt install rclone
-CentOS / RHEL 7+ sudo yum install epel-release && sudo yum install rclone
-CentOS / RHEL 8+ sudo dnf install epel-release && sudo dnf install rclone
-Fedora sudo dnf install rclone
-Arch Linux sudo pacman -S rclone
-openSUSE sudo zypper install rclone
-Alpine Linux sudo apk add rclone
+Debian / Ubuntu sudo apt update && sudo apt install rclone   
+CentOS / RHEL 7+ sudo yum install epel-release && sudo yum install rclone   
+CentOS / RHEL 8+ sudo dnf install epel-release && sudo dnf install rclone   
+Fedora sudo dnf install rclone   
+Arch Linux sudo pacman -S rclone   
+openSUSE sudo zypper install rclone   
+Alpine Linux sudo apk add rclone   
 
 其他系统请参考 rclone 官方安装文档。
 
