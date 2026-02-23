@@ -1,137 +1,161 @@
-日常数据上传脚本
+自用
 
-https://img.shields.io/badge/GitHub-仓库-blue
-https://img.shields.io/badge/license-MIT-green
+🌐 日常数据上传脚本 (Daily Upload Script)
 
-本项目提供了一个自动化的 Shell 脚本，用于：
-
-· 上传昨日的 atop 系统性能日志到 S3 兼容的对象存储（通过 rclone）。
-· 生成并上传昨日的网络流量报告（基于 vnstat）到对象存储。
-
-脚本支持手动运行时显示上传进度（仅流量报告部分），并自动记录操作日志到系统日志（logger）。
+一个轻量级 Shell 脚本，自动上传 atop 系统日志 并生成 网络流量报告 到 S3 兼容的对象存储（通过 rclone）。
 
 ---
 
-快速开始
+📋 功能特性
 
-一键安装（推荐）
+· 📤 自动上传昨日的 atop 日志文件（/var/log/atop/atop_YYYYMMDD）到指定的 S3 路径
+· 📊 基于 vnstat 生成昨日的网络流量报告（包含当日和累计流量）
+· 🔄 手动运行时显示上传进度（仅流量报告部分）
+· 📝 操作日志通过 logger 写入系统日志，便于追踪
+· ⏰ 支持定时任务（默认每天 UTC 02:00 执行）
+· 🛠️ 一键安装脚本自动安装 vnstat 并配置 crontab
 
-使用以下命令之一，即可从 GitHub 直接下载并运行安装脚本：
+---
 
-使用 curl：
+⚠️ 重要前提
+
+在运行安装脚本之前，您必须已经安装并配置好 rclone！
+本脚本不会自动安装 rclone，而是检查其是否存在，若不存在则提示手动安装并退出。
+
+1. 安装 rclone
+
+根据您的 Linux 发行版，使用以下命令之一安装 rclone：
+
+发行版 安装命令
+Debian / Ubuntu sudo apt update && sudo apt install rclone
+CentOS / RHEL 7+ sudo yum install epel-release && sudo yum install rclone
+CentOS / RHEL 8+ sudo dnf install epel-release && sudo dnf install rclone
+Fedora sudo dnf install rclone
+Arch Linux sudo pacman -S rclone
+openSUSE sudo zypper install rclone
+Alpine Linux sudo apk add rclone
+
+其他系统请参考 rclone 官方安装文档。
+
+2. 配置 rclone remote
+
+安装完成后，运行 rclone config 创建一个 remote（建议命名为 atop，与脚本默认名称一致）。
+
+示例配置（以 AWS S3 为例）：
+
+```bash
+rclone config
+> n               # 新建 remote
+> atop            # 输入名称（必须与脚本中的 RCLONE_REMOTE 一致）
+> 选择存储类型（例如 4 表示 s3）
+> 填写 Access Key ID、Secret Access Key、Endpoint（可选）、区域等
+> 后续选项保持默认即可
+```
+
+验证配置是否成功：
+
+```bash
+rclone ls atop:your-bucket-name/
+```
+
+确保您的存储桶（Bucket）已存在（rclone 不会自动创建桶）。
+
+---
+
+🚀 快速安装
+
+完成上述准备工作后，使用以下任一命令一键安装本脚本：
+
+使用 curl
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/yourusername/daily-upload-script/main/install.sh | sudo bash
 ```
 
-使用 wget：
+使用 wget
 
 ```bash
 wget -qO- https://raw.githubusercontent.com/yourusername/daily-upload-script/main/install.sh | sudo bash
 ```
 
-⚠️ 请将 URL 中的 yourusername/daily-upload-script 替换为实际的 GitHub 仓库路径。如果您 fork 了本项目，请使用您自己的仓库地址。
+📍 请将 URL 中的 yourusername/daily-upload-script 替换为实际的仓库地址。
 
 安装脚本会自动：
 
-· 检测包管理器并安装 rclone 和 vnstat。
-· 将主脚本写入 /usr/local/bin/daily_upload.sh。
-· 配置定时任务（每天 UTC 02:00 执行）。
-· 提示您运行 rclone config 完成远程存储配置。
-
-手动安装
-
-如果您希望手动控制安装过程，可以克隆本仓库：
-
-```bash
-git clone https://github.com/yourusername/daily-upload-script.git
-cd daily-upload-script
-chmod +x install.sh
-sudo ./install.sh
-```
+· 检查 rclone 是否已安装（若未安装则提示并退出）
+· 安装 vnstat（如未安装）
+· 将主脚本写入 /usr/local/bin/daily_upload.sh
+· 在 /etc/cron.d/daily_upload 中添加定时任务（每天 UTC 02:00 执行）
+· 提示您完成 rclone 配置（如尚未配置）
 
 ---
 
-依赖
+⚙️ 配置指南
 
-· rclone：用于文件上传到云存储（需预先配置）
-· vnstat：用于获取网络流量统计数据
-· 基础命令：sh、date、awk、logger、rm 等（通常系统自带）
-
----
-
-配置
-
-1. 配置 rclone
-
-安装后需运行 rclone config 添加远程存储。请确保 remote 名称为 atop（如需修改，请编辑 /usr/local/bin/daily_upload.sh 中的 RCLONE_REMOTE 变量）。
-
-示例配置（以 AWS S3 为例）：
-
-```
-rclone config
-> n               # 新建 remote
-> atop            # 名称输入 atop
-> 选择对应的存储类型（如 s3）
-> 填写 Access Key ID, Secret Access Key, Endpoint 等信息
-> 保持默认或按需配置
-```
-
-2. 修改脚本中的存储路径（可选）
-
-编辑 /usr/local/bin/daily_upload.sh，根据需要调整以下变量：
+安装完成后，您可能需要根据实际环境调整脚本中的配置变量。
+编辑 /usr/local/bin/daily_upload.sh，修改以下部分：
 
 ```bash
+# ===== 配置区域 =====
+RCLONE_REMOTE="atop"                         # rclone remote 名称（应与您配置的一致）
 # atop 日志相关
 ATOP_LOG_DIR="/var/log/atop"                  # atop 日志本地目录
 ATOP_BUCKET_PATH="atop-bucket-66/atop-logs/hax" # atop 日志上传路径
-
 # 流量报告相关
 TRAFFIC_REPORT_DIR="/tmp"                      # 报告临时存放目录
 TRAFFIC_BUCKET_PATH="atop-bucket-66/traffic-reports" # 流量报告上传路径
+# ===================
 ```
+
+确保存储桶路径正确，且存储桶已存在。
 
 ---
 
+▶️ 使用说明
+
 手动运行
 
-直接执行脚本即可手动触发上传（会显示进度）：
+直接执行脚本即可触发上传（会显示流量报告的上传进度）：
 
 ```bash
 sudo /usr/local/bin/daily_upload.sh
 ```
 
-如果希望测试 atop 日志上传，请确保 /var/log/atop/ 中存在对应日期的日志文件（例如 atop_20250222）。
+如果 atop 日志目录中存在昨天的日志文件（例如 atop_20250222），它们也会被上传。
+
+定时任务
+
+默认 cron 任务已添加，每天 UTC 02:00（即北京时间 10:00）自动运行。
+如需修改执行时间，请编辑 /etc/cron.d/daily_upload 文件。
 
 ---
 
-连接测试
+🧪 连接测试
 
-使用以下一键测试命令验证 rclone 配置是否正确：
+在配置完成后，建议运行以下测试命令验证 rclone 连通性：
 
 ```bash
-# 请替换 remote 和路径为您的实际值
+# 一键测试（请替换 remote 和路径为您的实际值）
 RCLONE_REMOTE="atop"
 TEST_PATH="atop-bucket-66/test"   # 测试目录（确保桶存在）
 
 TEST_FILE="/tmp/rclone-test-$(date +%s).txt"
 echo "rclone test at $(date)" > "$TEST_FILE"
 
-echo "上传中..."
+echo "📤 上传测试文件..."
 rclone copy "$TEST_FILE" "$RCLONE_REMOTE:$TEST_PATH/"
 
 if [ $? -eq 0 ]; then
     echo "✅ 上传成功，远程文件列表："
     rclone ls "$RCLONE_REMOTE:$TEST_PATH/"
-    
-    # 清理远程测试文件
+    # 清理
     rclone delete "$RCLONE_REMOTE:$TEST_PATH/$(basename "$TEST_FILE")"
 else
     echo "❌ 上传失败，请检查配置和网络"
 fi
 
 rm -f "$TEST_FILE"
-echo "测试完成"
+echo "🎉 测试完成"
 ```
 
 更简洁的单行测试（使用 rcat）：
@@ -142,65 +166,43 @@ echo "test" | rclone rcat "atop:atop-bucket-66/test/test-$(date +%s).txt" && rcl
 
 ---
 
-定时任务
+📍 日志查看
 
-安装脚本已自动添加 cron 任务：
+脚本通过 logger 记录操作，可使用以下命令查看：
+
+Debian/Ubuntu
 
 ```bash
-cat /etc/cron.d/daily_upload
-# 输出：0 2 * * * root /usr/local/bin/daily_upload.sh
+grep "atop upload\|daily traffic report" /var/log/syslog
 ```
 
-表示每天 UTC 时间 02:00（即北京时间 10:00）执行。如需修改时间，直接编辑该文件即可。
-
----
-
-日志查看
-
-脚本执行日志通过 logger 写入系统日志，可使用以下命令查看：
+CentOS/RHEL
 
 ```bash
-# 查看最近的 atop 上传记录
-grep "atop upload" /var/log/syslog  # Debian/Ubuntu
-grep "atop upload" /var/log/messages # CentOS/RHEL
-
-# 查看流量报告上传记录
-grep "daily traffic report" /var/log/syslog
+grep "atop upload\|daily traffic report" /var/log/messages
 ```
 
 ---
 
-故障排除
+🐛 故障排除
 
-1. rclone 上传失败
-
-· 检查 remote 名称是否匹配：rclone listremotes
-· 测试连通性：rclone ls atop:atop-bucket-66/
-· 加上 --verbose 查看详细错误：rclone copy file atop:path/ -v
-
-2. vnstat 无数据
-
-· 确保 vnstat 服务已启动：systemctl status vnstat
-· 手动更新数据库：vnstat -u
-· 检查网络接口：vnstat --iflist
-
-3. date 命令不支持 -d "yesterday"
-
-· 某些嵌入式系统可能使用 busybox date，请替换为 date --date="1 day ago" 或安装 GNU date。
-
-4. atop 日志文件未找到
-
-· 确认 atop 已安装并正确配置日志轮转。
-· 检查日志目录和文件名格式是否符合脚本预期（默认为 /var/log/atop/atop_YYYYMMDD）。
+问题 可能原因 解决方法
+rclone 上传失败 remote 名称错误 / 权限不足 / 网络不通 rclone listremotes 检查名称；rclone ls atop:bucket/ 测试连通性；添加 -vv 参数查看详细日志
+vnstat 无数据 服务未启动 / 接口未监控 systemctl status vnstat；vnstat --iflist 查看可用接口；vnstat -u 强制更新
+date 命令不支持 -d 系统使用 busybox date 修改脚本中的 YESTERDAY 获取方式为 date --date="1 day ago" +%Y%m%d
+atop 日志未找到 日志路径或文件名格式不符 检查 /var/log/atop/ 下是否有类似 atop_20250222 的文件；修改脚本中的 ATOP_LOG_DIR 变量
 
 ---
 
-贡献
+🤝 贡献
 
-欢迎提交 Issue 和 Pull Request！请访问 GitHub 仓库 参与贡献。
+欢迎提交 Issue 和 Pull Request！
+
+· 报告 Bug：新建 Issue
+· 提出新功能：讨论
 
 ---
 
-许可证
+📄 许可证
 
-MIT
+MIT © yourname
