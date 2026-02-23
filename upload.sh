@@ -44,7 +44,7 @@ read -p "atop 日志本地目录 [${DEFAULT_ATOP_LOG_DIR}]: " ATOP_LOG_DIR
 ATOP_LOG_DIR=${ATOP_LOG_DIR:-$DEFAULT_ATOP_LOG_DIR}
 
 # atop 日志上传路径（默认：atop-bucket-66/atop-logs/hax）
-echo -e "${YELLOW}⚠️  请确保存储桶（bucket）已在对象存储中手动创建子路径。${NC}"
+echo -e "${YELLOW}⚠️  请确保存储桶（bucket）已在对象存储中手动创建，子路径可以自动创建。${NC}"
 DEFAULT_ATOP_BUCKET="atop-bucket-66/atop-logs/hax"
 read -p "atop 日志上传路径（桶名/路径）[${DEFAULT_ATOP_BUCKET}]: " ATOP_BUCKET_PATH
 ATOP_BUCKET_PATH=${ATOP_BUCKET_PATH:-$DEFAULT_ATOP_BUCKET}
@@ -55,7 +55,7 @@ read -p "流量报告临时目录 [${DEFAULT_TRAFFIC_DIR}]: " TRAFFIC_REPORT_DIR
 TRAFFIC_REPORT_DIR=${TRAFFIC_REPORT_DIR:-$DEFAULT_TRAFFIC_DIR}
 
 # 流量报告上传路径（默认：atop-bucket-66/traffic-reports）
-echo -e "${YELLOW}⚠️  请确保存储桶（bucket）已在对象存储中手动创建子路径。${NC}"
+echo -e "${YELLOW}⚠️  请确保存储桶（bucket）已在对象存储中手动创建，子路径可以自动创建。${NC}"
 DEFAULT_TRAFFIC_BUCKET="atop-bucket-66/traffic-reports"
 read -p "流量报告上传路径（桶名/路径）[${DEFAULT_TRAFFIC_BUCKET}]: " TRAFFIC_BUCKET_PATH
 TRAFFIC_BUCKET_PATH=${TRAFFIC_BUCKET_PATH:-$DEFAULT_TRAFFIC_BUCKET}
@@ -223,7 +223,7 @@ if [ -f "$CRON_FILE" ]; then
     echo -e "${YELLOW}定时任务文件已存在，跳过写入（请手动检查 $CRON_FILE）${NC}"
 else
     echo "$CRON_LINE" > "$CRON_FILE"
-    echo
+    echo -e "${GREEN}✓ 定时任务已添加：每天 UTC 02:00 执行${NC}"
 fi
 
 # ---------- 自动测试上传 ----------
@@ -263,7 +263,10 @@ echo ""
 echo -e "${YELLOW}您的主脚本位置：${NC} $SCRIPT_PATH"
 echo -e "${YELLOW}如需修改配置，请直接编辑该文件。${NC}"
 echo ""
-echo -e "${YELLOW}手动运行脚本测试完整功能：${NC}"
+echo -e "${YELLOW}24小时后可手动运行脚本测试完整功能：${NC}"
 echo "  sudo $SCRIPT_PATH"
+echo ""
+echo -e "${YELLOW}若上传失败修改配置后可用echo "rclone test at $(date)" | rclone rcat "atop:atop-bucket-66/test/test-$(date +%s).txt" && rclone ls "atop:atop-bucket-66/test/"进行测试${NC}"
+echo -e "请将命令中的 atop 和 atop-bucket-66/test 替换为您自己的 rclone remote 名称和测试路径。"
 echo ""
 echo -e "${GREEN}========================================${NC}"
