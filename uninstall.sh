@@ -91,6 +91,38 @@ while true; do
     esac
 done
 
+# ---------- 是否删除 rclone 配置文件 ----------
+echo ""
+RCLONE_CONFIG="$HOME/.config/rclone/rclone.conf"
+if [ -f "$RCLONE_CONFIG" ]; then
+    echo -e "${YELLOW}检测到 rclone 配置文件：$RCLONE_CONFIG${NC}"
+    while true; do
+        read -p "是否删除该配置文件？（所有 remote 配置将丢失）(y/n) " -n 1 -r
+        echo
+        case $REPLY in
+            [Yy])
+                rm -f "$RCLONE_CONFIG"
+                echo -e "${GREEN}✓ 已删除 rclone 配置文件${NC}"
+                # 如果目录为空，可选提示删除目录
+                RCLONE_CONFIG_DIR="$(dirname "$RCLONE_CONFIG")"
+                if [ -d "$RCLONE_CONFIG_DIR" ] && [ -z "$(ls -A "$RCLONE_CONFIG_DIR")" ]; then
+                    echo "配置文件目录为空，您也可以手动删除：rmdir $RCLONE_CONFIG_DIR"
+                fi
+                break
+                ;;
+            [Nn])
+                echo "保留 rclone 配置文件。"
+                break
+                ;;
+            *)
+                echo "请输入 y 或 n。"
+                ;;
+        esac
+    done
+else
+    echo -e "${YELLOW}未找到 rclone 配置文件，跳过。${NC}"
+fi
+
 echo ""
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}卸载完成！${NC}"
