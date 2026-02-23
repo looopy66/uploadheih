@@ -128,7 +128,7 @@ TRAFFIC_BUCKET_PATH="atop-bucket-66/traffic-reports" # 流量报告上传路径
 
 ▶️ 使用说明
 
-手动运行
+手动运行（脚本运行24小时以后）
 
 直接执行脚本即可触发上传（会显示流量报告的上传进度）：
 
