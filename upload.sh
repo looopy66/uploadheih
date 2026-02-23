@@ -1,64 +1,83 @@
 #!/bin/bash
-# 一键安装脚本：检查 rclone，安装 vnstat，写入上传脚本，配置定时任务
+# 一键安装脚本：交互式配置 + 自动安装 vnstat + 写入脚本 + 配置定时任务 + 自动测试上传
 
-set -e  # 遇到错误立即退出
+set -e
 
 # 颜色输出
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
-echo -e "${GREEN}开始安装日常上传脚本所需环境...${NC}"
+echo -e "${GREEN}========================================${NC}"
+echo -e "${GREEN}   日常数据上传脚本 安装程序${NC}"
+echo -e "${GREEN}========================================${NC}"
 
-# 检查是否以 root 运行
+# 检查 root
 if [ "$EUID" -ne 0 ]; then
     echo -e "${RED}请以 root 权限运行此脚本（例如使用 sudo）${NC}"
     exit 1
 fi
 
-# ---------- 检查 rclone 是否已安装 ----------
+# ---------- 检查 rclone ----------
 if ! command -v rclone >/dev/null 2>&1; then
     echo -e "${RED}错误: rclone 未安装。${NC}"
-    echo -e "请先安装 rclone 并配置 remote，然后再运行此脚本。"
-    echo ""
-    echo "根据您的系统，可以使用以下命令安装 rclone："
-    
-    if command -v apt >/dev/null 2>&1; then
-        echo "  sudo apt update && sudo apt install rclone"
-    elif command -v yum >/dev/null 2>&1; then
-        echo "  sudo yum install epel-release && sudo yum install rclone"
-    elif command -v dnf >/dev/null 2>&1; then
-        echo "  sudo dnf install epel-release && sudo dnf install rclone"
-    elif command -v pacman >/dev/null 2>&1; then
-        echo "  sudo pacman -S rclone"
-    elif command -v zypper >/dev/null 2>&1; then
-        echo "  sudo zypper install rclone"
-    elif command -v apk >/dev/null 2>&1; then
-        echo "  sudo apk add rclone"
-    else
-        echo "  请参考 rclone 官方安装文档: https://rclone.org/install/"
-    fi
-    
-    echo ""
-    echo "安装完成后，请运行 'rclone config' 配置 remote (建议命名为 'atop')。"
-    echo "然后重新运行此安装脚本。"
+    echo "请先安装 rclone 并配置 remote，然后再运行此脚本。"
+    echo "安装参考: https://rclone.org/install/"
     exit 1
 else
-    echo -e "${GREEN}rclone 已安装，继续...${NC}"
+    echo -e "${GREEN}✓ rclone 已安装${NC}"
 fi
 
-# ---------- 检测包管理器并安装 vnstat ----------
+# ---------- 交互式配置（带默认值）----------
+echo ""
+echo -e "${YELLOW}请配置以下参数（直接回车使用默认值）：${NC}"
+
+# rclone remote 名称（默认：atop）
+DEFAULT_REMOTE="atop"
+read -p "rclone remote 名称 [${DEFAULT_REMOTE}]: " RCLONE_REMOTE
+RCLONE_REMOTE=${RCLONE_REMOTE:-$DEFAULT_REMOTE}
+
+# atop 日志目录（默认：/var/log/atop）
+DEFAULT_ATOP_LOG_DIR="/var/log/atop"
+read -p "atop 日志本地目录 [${DEFAULT_ATOP_LOG_DIR}]: " ATOP_LOG_DIR
+ATOP_LOG_DIR=${ATOP_LOG_DIR:-$DEFAULT_ATOP_LOG_DIR}
+
+# atop 日志上传路径（默认：atop-bucket-66/atop-logs/hax）
+echo -e "${YELLOW}⚠️  请确保存储桶（bucket）已在对象存储中手动创建，子路径可以自动创建。${NC}"
+DEFAULT_ATOP_BUCKET="atop-bucket-66/atop-logs/hax"
+read -p "atop 日志上传路径（桶名/路径）[${DEFAULT_ATOP_BUCKET}]: " ATOP_BUCKET_PATH
+ATOP_BUCKET_PATH=${ATOP_BUCKET_PATH:-$DEFAULT_ATOP_BUCKET}
+
+# 流量报告临时目录（默认：/tmp）
+DEFAULT_TRAFFIC_DIR="/tmp"
+read -p "流量报告临时目录 [${DEFAULT_TRAFFIC_DIR}]: " TRAFFIC_REPORT_DIR
+TRAFFIC_REPORT_DIR=${TRAFFIC_REPORT_DIR:-$DEFAULT_TRAFFIC_DIR}
+
+# 流量报告上传路径（默认：atop-bucket-66/traffic-reports）
+echo -e "${YELLOW}⚠️  请确保存储桶（bucket）已在对象存储中手动创建，子路径可以自动创建。${NC}"
+DEFAULT_TRAFFIC_BUCKET="atop-bucket-66/traffic-reports"
+read -p "流量报告上传路径（桶名/路径）[${DEFAULT_TRAFFIC_BUCKET}]: " TRAFFIC_BUCKET_PATH
+TRAFFIC_BUCKET_PATH=${TRAFFIC_BUCKET_PATH:-$DEFAULT_TRAFFIC_BUCKET}
+
+# 显示配置摘要
+echo ""
+echo -e "${GREEN}配置摘要：${NC}"
+echo "  rclone remote:          $RCLONE_REMOTE"
+echo "  atop 日志目录:           $ATOP_LOG_DIR"
+echo "  atop 上传路径:           $RCLONE_REMOTE:$ATOP_BUCKET_PATH/"
+echo "  流量报告临时目录:         $TRAFFIC_REPORT_DIR"
+echo "  流量报告上传路径:         $RCLONE_REMOTE:$TRAFFIC_BUCKET_PATH/"
+echo ""
+
+# ---------- 安装 vnstat（如未安装）----------
 install_vnstat() {
     if command -v apt >/dev/null 2>&1; then
-        apt update
-        apt install -y vnstat
+        apt update && apt install -y vnstat
     elif command -v yum >/dev/null 2>&1; then
-        yum install -y epel-release
-        yum install -y vnstat
+        yum install -y epel-release && yum install -y vnstat
     elif command -v dnf >/dev/null 2>&1; then
-        dnf install -y epel-release
-        dnf install -y vnstat
+        dnf install -y epel-release && dnf install -y vnstat
     elif command -v pacman >/dev/null 2>&1; then
         pacman -Syu --noconfirm vnstat
     elif command -v zypper >/dev/null 2>&1; then
@@ -71,32 +90,30 @@ install_vnstat() {
     fi
 }
 
-# 检查并安装 vnstat
 if ! command -v vnstat >/dev/null 2>&1; then
-    echo -e "${YELLOW}未找到 vnstat，正在安装...${NC}"
+    echo -e "${YELLOW}正在安装 vnstat...${NC}"
     install_vnstat
+    echo -e "${GREEN}✓ vnstat 安装完成${NC}"
 else
-    echo -e "${GREEN}vnstat 已安装，跳过${NC}"
+    echo -e "${GREEN}✓ vnstat 已安装${NC}"
 fi
 
-# ---------- 写入合并脚本到 /usr/local/bin ----------
+# ---------- 写入主脚本（使用占位符）----------
 SCRIPT_PATH="/usr/local/bin/daily_upload.sh"
-echo -e "${YELLOW}正在写入合并脚本到 $SCRIPT_PATH ...${NC}"
+echo -e "${YELLOW}正在生成主脚本 -> $SCRIPT_PATH ...${NC}"
 
 cat > "$SCRIPT_PATH" <<'EOF'
 #!/bin/sh
 # 合并脚本：上传昨日 atop 日志 + 生成并上传昨日网络流量报告
 # 包含手动运行时的进度显示（仅流量报告部分）
 
-# ===== 配置区域 =====
-RCLONE_REMOTE="atop"                         # rclone remote 名称
-# atop 日志相关
-ATOP_LOG_DIR="/var/log/atop"                  # atop 日志本地目录
-ATOP_BUCKET_PATH="atop-bucket-66/atop-logs/hax" # atop 日志上传路径
-# 流量报告相关
-TRAFFIC_REPORT_DIR="/tmp"                      # 报告临时存放目录（可修改）
-TRAFFIC_BUCKET_PATH="atop-bucket-66/traffic-reports" # 流量报告上传路径
-# ===================
+# ===== 配置区域（由安装程序自动替换）=====
+RCLONE_REMOTE="__RCLONE_REMOTE__"
+ATOP_LOG_DIR="__ATOP_LOG_DIR__"
+ATOP_BUCKET_PATH="__ATOP_BUCKET_PATH__"
+TRAFFIC_REPORT_DIR="__TRAFFIC_REPORT_DIR__"
+TRAFFIC_BUCKET_PATH="__TRAFFIC_BUCKET_PATH__"
+# ========================================
 
 YESTERDAY=$(date -d "yesterday" +%Y%m%d)
 
@@ -104,7 +121,6 @@ YESTERDAY=$(date -d "yesterday" +%Y%m%d)
 upload_atop_log() {
     LOG_FILE="$ATOP_LOG_DIR/atop_$YESTERDAY"
     if [ -f "$LOG_FILE" ]; then
-        # 使用 --checksum 确保文件一致性
         rclone copy "$LOG_FILE" "$RCLONE_REMOTE:$ATOP_BUCKET_PATH/" --checksum
         if [ $? -eq 0 ]; then
             rm "$LOG_FILE"
@@ -164,7 +180,7 @@ generate_and_upload_traffic_report() {
         echo "总上传量: $TOTAL_UP"
     } > "$REPORT_FILE"
 
-    # 4. 上传报告（手动运行时显示进度）
+    # 4. 上传报告
     if [ -t 1 ]; then
         echo "开始上传流量报告 $REPORT_FILE ..."
         rclone copy --progress "$REPORT_FILE" "$RCLONE_REMOTE:$TRAFFIC_BUCKET_PATH/"
@@ -182,17 +198,24 @@ generate_and_upload_traffic_report() {
     fi
 }
 
-# ---------- 主程序：依次执行两个任务 ----------
+# ---------- 主程序 ----------
 upload_atop_log
 generate_and_upload_traffic_report
 
 exit 0
 EOF
 
-chmod +x "$SCRIPT_PATH"
-echo -e "${GREEN}脚本已写入并添加执行权限${NC}"
+# 替换占位符
+sed -i "s|__RCLONE_REMOTE__|$RCLONE_REMOTE|g" "$SCRIPT_PATH"
+sed -i "s|__ATOP_LOG_DIR__|$ATOP_LOG_DIR|g" "$SCRIPT_PATH"
+sed -i "s|__ATOP_BUCKET_PATH__|$ATOP_BUCKET_PATH|g" "$SCRIPT_PATH"
+sed -i "s|__TRAFFIC_REPORT_DIR__|$TRAFFIC_REPORT_DIR|g" "$SCRIPT_PATH"
+sed -i "s|__TRAFFIC_BUCKET_PATH__|$TRAFFIC_BUCKET_PATH|g" "$SCRIPT_PATH"
 
-# ---------- 配置定时任务（每天 UTC 02:00）----------
+chmod +x "$SCRIPT_PATH"
+echo -e "${GREEN}✓ 主脚本生成完成${NC}"
+
+# ---------- 配置定时任务 ----------
 CRON_FILE="/etc/cron.d/daily_upload"
 CRON_LINE="0 2 * * * root $SCRIPT_PATH"
 
@@ -200,21 +223,47 @@ if [ -f "$CRON_FILE" ]; then
     echo -e "${YELLOW}定时任务文件已存在，跳过写入（请手动检查 $CRON_FILE）${NC}"
 else
     echo "$CRON_LINE" > "$CRON_FILE"
-    echo -e "${GREEN}定时任务已添加：每天 UTC 时间 02:00 执行 $SCRIPT_PATH${NC}"
+    echo
 fi
 
-# ---------- 提示用户进行 rclone 配置（如果尚未配置）----------
+# ---------- 自动测试上传 ----------
 echo ""
-echo -e "${GREEN}安装完成！${NC}"
-echo -e "${YELLOW}请确保已使用 'rclone config' 配置好 remote（默认名称为 'atop'）。${NC}"
-echo -e "${YELLOW}如果尚未配置，请立即运行：${NC}"
-echo "  rclone config"
-echo ""
-echo -e "${YELLOW}配置完成后，建议手动测试脚本：${NC}"
-echo "  $SCRIPT_PATH"
-echo ""
-echo -e "${YELLOW}如果需要修改脚本中的配置变量（如存储桶路径），请编辑：${NC}"
-echo "  $SCRIPT_PATH"
-echo ""
+echo -e "${YELLOW}正在自动测试上传功能...${NC}"
+echo -e "${YELLOW}（请确保存储桶 ${RCLONE_REMOTE}:${TRAFFIC_BUCKET_PATH%%/*} 已手动创建）${NC}"
 
-exit 0
+TEST_FILE="/tmp/rclone-auto-test-$(date +%s).txt"
+echo "rclone auto test at $(date)" > "$TEST_FILE"
+
+echo "📤 上传测试文件到 $RCLONE_REMOTE:$TRAFFIC_BUCKET_PATH/ ..."
+if rclone copy "$TEST_FILE" "$RCLONE_REMOTE:$TRAFFIC_BUCKET_PATH/" 2>/dev/null; then
+    echo -e "${GREEN}✅ 测试文件上传成功！${NC}"
+    # 列出远程文件确认
+    if rclone ls "$RCLONE_REMOTE:$TRAFFIC_BUCKET_PATH/" | grep -q "$(basename "$TEST_FILE")"; then
+        echo "远程文件存在"
+    fi
+    # 清理远程测试文件
+    rclone delete "$RCLONE_REMOTE:$TRAFFIC_BUCKET_PATH/$(basename "$TEST_FILE")" 2>/dev/null && echo "已清理远程测试文件"
+else
+    echo -e "${RED}❌ 测试文件上传失败！${NC}"
+    echo -e "请检查："
+    echo -e "  1. rclone remote '${RCLONE_REMOTE}' 是否正确配置（当前可用 remote：$(rclone listremotes | tr '\n' ' ')）"
+    echo -e "  2. 存储桶 '${TRAFFIC_BUCKET_PATH%%/*}' 是否存在且可写"
+    echo -e "  3. 网络连接是否正常"
+    echo -e "您可以手动运行 'rclone ls ${RCLONE_REMOTE}:${TRAFFIC_BUCKET_PATH%%/*}/' 来诊断"
+fi
+
+rm -f "$TEST_FILE"
+echo -e "${GREEN}自动测试完成${NC}"
+
+# ---------- 最终提示 ----------
+echo ""
+echo -e "${GREEN}========================================${NC}"
+echo -e "${GREEN}安装完成！${NC}"
+echo ""
+echo -e "${YELLOW}您的主脚本位置：${NC} $SCRIPT_PATH"
+echo -e "${YELLOW}如需修改配置，请直接编辑该文件。${NC}"
+echo ""
+echo -e "${YELLOW}手动运行脚本测试完整功能：${NC}"
+echo "  sudo $SCRIPT_PATH"
+echo ""
+echo -e "${GREEN}========================================${NC}"
